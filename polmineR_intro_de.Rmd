@@ -1,0 +1,607 @@
+---
+title: "Learning polmineR"
+author: "Andreas Blaette"
+date: "17 Februar 2016"
+output: html_document
+---
+
+
+Inhaltsanalyse - Korpusanalyse - Text Mining mit R
+==================================================
+
+R ist nicht alternativlos!
+--------------------------
+- Perl (reguläre Ausdrücke etc.)
+- Python (NLTK,  etc.)
+- Java (Stanford NLP, mallet etc.)
+- C++ (Performanz)
+
+Warum nicht mit R?
+------------------
+- R gilt als langsam (aber: Vektorisierung, Parallelisierung, Rcpp)
+- R gilt als wenig robust
+
+Warum Korpusanalyse mit R?
+--------------------------
+- R als sozialwissenschaftliche lingua franca
+- Interaktivität
+- freundliche Nutzercommunity
+- RStudio als IDE
+
+polmineR ist nicht alternativlos!
+---------------------------------
+- Kommerzielle Produkte: Wordsmith, Lexico3, Provalis
+- CQPweb, TXM
+- tm, quanteda
+
+Zielsetzungen von polmineR
+--------------------------
+- Validität
+- Interaktivität
+- Performanz
+- Flexibilität
+- Open Source
+- Portabilität
+- Usability
+- Dokumentation
+- Reproduzierbarkeit
+
+
+Getting started
+===============
+
+Installationsmöglichkeiten
+--------------------------
+- Linux, MacOS
+- virtualisiertes Unix unter Windows
+- Serverinstallation, Nutzung von RStudio Server 
+
+Empfehlungen
+------------
+- (möglichst) mehr als 4GB Arbeitsspeicher
+- mehrere Prozessorkerne
+- SSD
+
+Installation
+------------
+
+** Dependencies des polmineR-Pakets: **
+
+- methods (S4-Klassensystem)
+- rcqp (Zugriff auf die CWB)
+- slam (simple triplet matrix)
+- Matrix (Matrizen)
+- tm (Standard-Package für Text Mining in R)
+- data.table (schnelle Tabellenoperationen)
+- parallel (Parallelisierung)
+- foreach (Parallelisierung)
+- DT (DataTables)
+- magrittr (Pipes)
+
+** Installation von polmineR **
+
+Variante 1: Installation mit devtools
+
+```{r}
+devtools::install_github("PolMine/polmineR")
+```
+
+Variante 2: Installation durch Clonen des git-Repositoriums
+
+git clone https://github.com/PolMine/polmineR.git
+R CMD build polmineR --no-build-vignettes
+R CMD INSTALL polmineR_0.5.24.tar.gz
+
+
+** Schlüsselstelle rcqp **
+
+Das Paket ist nicht (mehr) über CRAN erhältlich, aber:
+- CRAN-GitHub-Präsenz: https://github.com/cran/rcqp
+- R-Forge 
+
+https://r-forge.r-project.org/scm/viewvc.php/pkg/rcqp/INSTALL?view=markup&root=rcwb&pathrev=248
+
+sudo apt-get install subversion
+svn checkout svn://scm.r-forge.r-project.org/svnroot/rcwb/pkg/rcqp
+
+** Schlüsselstelle rJava **
+
+Der einfache Weg:
+sudo apt-get install r-cran-rjava
+
+Etwas komplizierter:
+- Installation der openjdk
+- R CMD javareconf
+
+** Nach der Installation **
+
+```{r}
+library(polmineR)
+```
+
+** Umgebungsvariablen **
+Das rcqp-Paket und damit auch polmineR setzen ein Verzeichnis der CWB voraus:
+- registry-Verzeichnis
+- Ordner mit indizierten Korpora 
+
+```{r}
+Sys.getenv("CORPUS_REGISTRY")
+Sys.setenv(CORPUS_REGISTRY="/var/local/cwb/registry")
+```
+
+Oder Eintrag in folgenden Dateien
+- .Renviron
+- Startup-Dateien in /etc/R/
+
+Vgl. Hilfe zum Start von R:
+```{r}
+?Startup
+```
+
+** Update **
+
+```{r}
+devtools::install_github("PolMine/polmineR")
+```
+
+Installation von Korpora
+------------------------
+- in CWB-Verzeichnissen
+- verpackt in R-Paketen (und dann: use-Funktion)
+
+```{r}
+use("bt")
+```
+
+Erste Schritte 
+==============
+
+** Initialisierung **
+
+```{r}
+library(polmineR)
+use("bt")
+```
+
+** Anlegen einer Partition **
+
+```{r}
+regerklaerung <- partition(
+  "BT",
+  list(speaker_name="Angela Merkel", speaker_date="2005-11-30"),
+  type="plpr"
+  )
+```
+
+** Lesen **
+
+```{r}
+read(regerklaerung, meta="speaker_name")
+read(regerklaerung, meta=c("speaker_name", "speaker_date", "speaker_party"))
+```
+
+** Konkordanzen **
+
+```{r}
+bt2002 <- partition("BT", list(plenary_protocol_year="2002"))
+kwic(bt2002, "Islam", meta=c("speaker_year"))
+kwic(bt2002, "Islam", meta=c("speaker_year", "speaker_who"))
+kwic(bt2002, "Islam", meta=c("speaker_year", "speaker_who", "speaker_party"))
+kwic(bt2002, "Islam", meta=c("speaker_year", "speaker_who", "speaker_party"), left=30, right=30)
+
+```
+
+** Frequenzzählung **
+
+In der einfachen Variante ...
+
+```{r}
+regerklaerung <- partition(
+  "BT",
+  list(
+    speaker_name="Angela Merkel",
+    speaker_date="2005-11-30",
+    speaker_type="speech"
+    ),
+  pAttribute="word", type="plpr"
+  )
+view(regerklaerung)
+
+```
+
+```{r}
+regerklaerung2 <- partition(
+  "BT",
+  list(speaker_name="Angela Merkel", speaker_date="2005-11-30", speaker_type="speech"),
+  pAttribute=c("word", "pos"), type="plpr"
+  )
+view(regerklaerung)
+```
+
+```{r}
+regerklaerung3 <- enrich(regerklaerung, pAttribute=c("word", "pos"))
+view(regerklaerung3)
+```
+
+Eine kleine Visualisierung ...
+
+```{r}
+library(wordcloud)
+library(RColorBrewer)
+nounsOnly <- subset(regerklaerung3, pos == "NN")
+nounsOnly <- sort(nounsOnly, "count")
+wordcloud(
+  words=nounsOnly@stat[["word"]][1:50],
+  freq=nounsOnly@stat[["count"]][1:50]/2,
+  colors=brewer.pal(8,"Dark2")
+  )
+dotplot(nounsOnly, col="count", n=25)
+```
+
+** Was passiert da eigentlich?! **
+
+- S4-Klassen und ihre Slots (Strukturanalyse mit str())
+- Vererbung von Methoden, weniger zu merken
+
+```{r}
+str(nounsOnly)
+methods("partition"")
+getMethod("subset", "textstat")
+```
+
+Anlegen von Partition
+=====================
+
+Eine wichtige Unterscheidung
+----------------------------
+
+- s-Attribute (parameter sAttributes)
+- p-Attribute (parameter pAttributes)
+
+
+Exploration eines Korpus
+------------------------
+
+```{r}
+pAttributes("BT")
+```
+
+```{r}
+sAttributes("BT")
+sAttributes("BT", "speaker_name")
+```
+
+... aber das kann man ohne Ursprungsdaten nicht verstehen:
+
+Kurzeinführung in XML (vgl. HTML)
+---------------------------------
+
+- Hierarchie
+- Wohlgeformtheit
+- (DTD-)Validität
+
+
+Partitionierung
+---------------
+
+```{r}
+schroeder <- partition(
+  "BT", list(speaker_name=c("Gerhard Schröder"))
+  )
+bk <- partition(
+  "BT",
+  list(
+    speaker_name=c("Gerhard Schröder", "Angela Merkel"))
+  )
+bk <- partition("BT", list(speaker_name=c("Gerhard Schröder", "Angela Merkel"), speaker_lp=c("14", "15", "16"))
+```
+
+Kurzeinführung in die Welt der regulären Ausdrücke
+--------------------------------------------------
+
+** Zeichenklassen: **
+. beliebiges Zeichen
+\\d Zahl
+
+** Quantoren **
++ mindestens einmal
+* keinmal oder beliebig oft
+{} bestimmte Anzahl
+
+** Sonstiges **
+Alternativen in Klammern
+alternative Zeichen in eckigen Klammern 
+
+
+```{r}
+schroederPost911 <- partition(
+  "BT",
+  list(
+    speaker_name=c("Gerhard Schröder"),
+    speaker_date=c("2001-(09|10|11|12)-.*")
+    ),
+  regex=TRUE
+  )
+sAttributes(schroederPost911, "speaker_date")
+```
+
+Partitionen bündeln!
+---------------------
+```{r}
+schroeder <- partitionBundle(
+  "BT",
+  def=list(speaker_name="Gerhard Schröder"),
+  var=list(speaker_date=sAttributes(schroederPost911, "speaker_date")),
+  type="plpr"
+)
+summary(schroeder)
+read(schroeder, meta="speaker_date")
+label(schroeder, meta="speaker_date")
+1read(schroeder[[8]], meta="speaker_date")
+```
+
+Ein fortgeschrittenes Szenario
+------------------------------
+```{r}
+library(chron)
+library(magrittr)
+days <- sAttributes("BT", "speaker_date")
+aftermath <- seq.dates(from="11/09/2001", "11/03/2002", by="days") %>%
+  as.Date(format="%Y-%m-%d") %>%
+  as.character
+sessionsAftermath <- days[days %in% aftermath]
+foo <- partition("BT", list(speaker_date=sessionsAftermath), pAttribute="word")
+view(foo)
+```
+
+Einige weitere Möglichkeiten
+----------------------------
+- in partitionen hineinzoomen
+- session settings
+
+```{r}
+session
+corpus(session)
+corpus(session) <- "BT"
+partition(list(speaker_name="Angela Merkel"))
+```
+
+Frequenzzählungen
+=================
+
+count()
+-------
+```{r}
+btByYears <- partitionBundle(
+  "BT",
+  def=list(speaker_type="speech"),
+  var=list(speaker_year=NULL)
+  )
+islam <- count(
+  btByYears,
+  query=c('Islam', 'Muslime', 'Terror'),
+  pAttribute="word", mc=FALSE
+  )
+islam2 <- as.data.frame(islam)[, c(2:ncol(islam))]
+rownames(islam2) <- islam[["partition"]]
+library(bubblegraph)
+linechart(as.data.frame(t(islam2)))
+```
+
+
+```{r}
+mig <- count(
+  btByYears,
+  query=c('"Asyl.*"', '"Flüchtling.*"', '".*[aA]ussiedler.*"', '"Übersiedler.*"', '"Gastarbeiter.*"', '"Vertriebene.*"', '"Menschen" "mit" "Migrationshintergrund"'),
+  pAttribute="word", mc=FALSE
+  )
+mig2 <- as.data.frame(mig)[, c(2:ncol(mig))]
+rownames(mig2) <- mig[["partition"]]
+library(bubblegraph)
+linechart(as.data.frame(t(mig2)))
+
+```
+
+
+# Frequenzzählung mit CQP-Syntax
+
+** Nutzung der CQP-Syntax **
+
+Grundlagen:
+- Ansteuern von p-Attributen
+- Quantoren 
+- Platzhalter
+
+```{r}
+sttsTagsetInfo <- "http://www.ims.uni-stuttgart.de/forschung/ressourcen/lexika/TagSets/stts-table.html"
+browseURL(sttsTagsetInfo)
+```
+
+
+http://cwb.sourceforge.net/files/CQP_Tutorial/
+http://cwb.sourceforge.net/files/CQP_Tutorial.pdf
+http://www.ims.uni-stuttgart.de/forschung/projekte/CorpusWorkbench/CQPTutorial/cqp-tutorial.2up.pdf
+
+
+
+```{r}
+btByYear <- partitionBundle(
+  "BT",
+  def=list(speaker_type="speech"),
+  var=list(speaker_year=as.character(c(1998:2007)))
+  )
+
+mig <- count(
+  btByYear,
+  query=c('"Asyl.*"', '"Flüchtling.*"', '".*[aA]ussiedler.*"', '"Übersiedler.*"', '"Gastarbeiter.*"', '"Vertriebene.*"'),
+  pAttribute="word", mc=FALSE
+  )
+mig2 <- as.data.frame(mig)[, c(2:ncol(mig))]
+rownames(mig2) <- mig[["partition"]]
+library(bubblegraph)
+linechart(as.data.frame(t(mig2)))
+```
+
+
+frequencies()
+-------------
+
+```{r}
+foo <- frequencies(bt, query='"[mM]ultikult.*"', pAttribute=NULL)
+```
+
+Übung: Parteienunterschiede ...
+
+```{r}
+csu <- partition(list(speaker_party=".*CSU.*"), regex=TRUE)
+```
+
+Konkordanzen
+============
+
+```{r}
+kwic(bt, '"Krieg" "gegen" "den" "Terror"', meta=c("speaker_date"))
+kwic(bt, '"Krieg" "gegen" "den" "Terror"', meta=c("speaker_date", "speaker_name"))
+```
+
+```{r}
+foo <- frequencies(bt, '"()"')
+
+Bkwic(bt, '"Krieg" "gegen" []{0,1} [pos="NN"]', meta=c("speaker_date", "speaker_party"))
+```
+
+Inspektion der Hilfe ...
+
+Und ein Beispiel: Prävention in der Sozialpolitik
+
+
+Kollokationsanalysen
+====================
+
+```{r}
+bt <- partition("BT", list(speaker_year="2006"), regex=TRUE)
+islam <- context(bt, "Islam", pAttribute="word")
+islam <- context(bt, '"Islam.*"', pAttribute=c("word", "pos"))
+view(islam)
+islam2 <- subset(islam, pos %in% c("NN", "ADJA"))
+view(islam2)
+wordcloud(
+  words=islam2@stat[["word"]][1:50],
+  freq=islam2@stat[["ll"]][1:50]/2,
+  colors=brewer.pal(8,"Dark2")
+  )
+dotplot(islam2, col="ll", 25)
+```
+
+weiterführend: Als Testverfahren implementiert t-test, PMI, log-likelihood
+
+** Beachte: **
+- Abhängigkeit der statistischen Testwerte von der Korpusgröße
+- keine unmittelbare Vergleichbarkeit der Testwerte!
+- qualitative Validierung
+
+
+** Diskussion: **
+Welche Filter sind angemessen?
+Welche Schwellenwerte sind angemessen?
+Welcher Kontext ist bei politikwissenschaftlichen Fragestellungen angemessen?
+
+
+Schlagwortanalysen
+==================
+
+Was nicht funktioniert ...
+
+```{r}
+schroeder1 <- partition("BT",
+  list(speaker_name="Gerhard Schröder", speaker_date="2001-09-12"), pAttribute="word",
+  type="plpr"
+)
+schroeder2 <- partition("BT",
+  list(speaker_name="Gerhard Schröder", speaker_date="2001-09-19"), pAttribute="word",
+  type="plpr"
+)
+schroeder3 <- partition("BT",
+  list(speaker_name="Gerhard Schröder", speaker_date="2001-11-28"), pAttribute="word",
+  type="plpr"
+)
+
+bt2001 <- partition("BT", list(speaker_year="2001"), pAttribute="word")
+
+keyws1 <- compare(schroeder1, bt2001)
+keyws2 <- compare(schroeder2, bt2001)
+keyws3 <- compare(schroeder3, bt2001)
+
+view(keyws1)
+view(keyws2)
+view(keyws3)
+```
+
+
+Mehr ist besser ...
+
+```{r}
+bt2002 <- partition("BT", list(speaker_year="2002", speaker_type="speech"), pAttribute="word")
+btBefore <- partition(
+  "BT", list(speaker_year=as.character(1996:2001), speaker_type="speech"),
+  pAttribute="word"
+)
+
+foo <- compare(bt2002, btBefore)
+```
+
+
+Übung: Themenschwerpunkte von Schröder in der 15. Legislaturperiode?
+
+
+Perspektiven der Textstatistik
+==============================
+
+```{r}
+merkel <- partition("BT", list(speaker_name=".*Merkel.*", speaker_type="speech"), regex=TRUE, pAttribute="word")
+merkelSpeeches <- as.speeches(
+  merkel, sAttributeDates="speaker_date", sAttributeNames="speaker_name",
+  gap=500
+  )
+merkelSpeeches <- enrich(merkelSpeeches, pAttribute="word")
+dtm <- as.DocumentTermMatrix(merkelSpeeches, col="count")
+toDrop <- polmineR:::noise(dtm)
+dtmTrimmed <- trim(dtm, termsToDrop=unique(unlist(toDrop)))
+dtmTrimmed <- trim(dtmTrimmed, docsToDrop = names(which(slam::row_sums(dtmTrimmed) < 20)))
+
+library(topicmodels)
+tmodel <- LDA(
+  dtmTrimmed, k=20, method = "Gibbs",
+  control = list(burnin = 1000, iter = 50, keep = 50, verbose=TRUE)
+)
+View(terms(tmodel, k=20))
+```
+
+
+Ausblick: Korpusaufbereitung
+============================
+
+
+```{r}
+xmlify(bt, sourceDir="txt_utf8", targetDir="tei", pattern="txt", continue=FALSE, mc=FALSE, progress=TRUE, failsafe=TRUE)
+  
+# the following steps may have to be repeated until the data are clean:
+# - match a key generated from the speaker attributes against the database
+# - add the information to the TEI documents
+# - inspect whether there is still information missing
+# - pimp the alias file, repair wikipedia data etc
+
+partyAffiliationOfSpeakers <- getPartyAffiliation(bt, sourceDir="tei", element="sp", attrs=c("who", "parliamentary_group", "role"))
+addSpeakerAttributes(bt, sourceDir="tei", targetDir="tei_enriched", attributesToAdd=partyAffiliationOfSpeakers, mc=FALSE, continue=FALSE)
+missingInfo <- getMissingInformation(bt, sourceDir="tei_enriched")
+
+xslt(bt, sourceDir="tei_enriched", targetDir="cwbxml", verbose=FALSE, progress=TRUE, continue=FALSE, mc=9)
+tokenize(bt, sourceDir="cwbxml", targetDir="tok", with="treetagger", progress=TRUE, continue=FALSE, mc=10)
+treetagger(bt, sourceDir="tok", targetDir="vrt", progress=TRUE, continue=FALSE, mc=9)
+fixVrt(bt, sourceDir="vrt", targetDir="vrt_fixed", mc=9, verbose=FALSE, progress=TRUE, continue=FALSE)
+adjustEncoding(bt, sourceDir="vrt_fixed", targetDir="vrt_latin", xml=TRUE, mc=9)
+cwbImport(bt, sourceDir="vrt_latin", "PLPRBTTEI", xml=TRUE, sample=50)
+
+teiToHtml(bt, sourceDir="tei_enriched", targetDir="html", progress=TRUE, mc=FALSE)
+
+```
