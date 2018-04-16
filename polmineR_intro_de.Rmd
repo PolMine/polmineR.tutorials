@@ -3,9 +3,10 @@ title: 'Text as Linguistic Data: Korpusanalyse mit polmineR'
 author: "Andreas Blaette"
 date: "16 April 2018"
 output:
+  beamer_presentation: default
+  ioslides_presentation: default
   slidy_presentation:
     footer: Copyright (c) 2018, Andreas Blaette
-  ioslides_presentation: default
 ---
 
 
