@@ -1,0 +1,43 @@
+---
+title: "Analyse von Zeitreihen mit 'polmineR'""
+subtitle: 'Beispielanalysen mit dem GermaParl-Korpus'
+author: "Andreas Blaette"
+date: "13 Mai 2018"
+output:
+  slidy_presentation:
+    footer: Copyright (c) 2018, Andreas Blaette
+  ioslides_presentation: default
+  beamer_presentation: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Initialisierung
+
+Die Beispiele basieren auf dem GermaParl-Korpus. Der Datensatz in dem Paket muss nach dem Laden von polmineR mit dem ´use´-Befehl aktiviert werden.
+
+```{r, eval = FALSE}
+library(polmineR)
+use("GermaParl")
+```
+
+Wenn Sie den Code der folgenden Beispiele auf Ihrem eigenen Rechner nachvollziehen möchten, können Sie das 'Rmarkdown'-Dokument, mit dem der Foliensatz generiert wurde, direkt in R laden:
+
+```{r, eval = FALSE}
+if (!"RCurl" %in% rownames(installed.packages())) install.packages("RCurl")
+library(RCurl)
+script <- getURL("https://raw.githubusercontent.com/PolMine/polmineR.tutorials/master/polmineR_intro_de.Rmd", ssl.verifypeer = FALSE)
+```
+
+Speichern Sie das Skript auf Ihrem Schreibtisch - oder an einem anderen Speicherort.
+
+```{r, eval = FALSE}
+filename <- "~/Desktop/polmineR_tutorial_ts.Rmd"
+writeLines(text = script, con = filename)
+```
+
+Wenn Sie jetzt das Dokument öffnen, können Sie den Code Schritt für Schritt nachvollziehen (und auf Ihre Bedürfnisse anpassen).
+
+----
+
