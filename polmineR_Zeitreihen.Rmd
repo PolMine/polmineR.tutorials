@@ -37,7 +37,7 @@ script <- getURL(
 Speichern Sie das Skript auf Ihrem Schreibtisch - oder an einem anderen Speicherort.
 
 ```{r save_code, eval = FALSE}
-filename <- "~/Desktop/polmineR_tutorial_zeitreihen.Rmd"
+filename <- "~/Desktop/polmineR_Zeitreihen.Rmd"
 if (interactive()) writeLines(text = script, con = filename)
 ```
 
