@@ -13,6 +13,15 @@ editor_options:
 ---
 
 
+```{r, message = FALSE, results = "hide", echo = FALSE}
+# Dieser Code wird im Foliensatz nicht angezeigt und ist nur erforderlich,
+# um gegebenenfalls fehlende Pakete nachzuladen:
+# kable und kableExtra werden benötigt, um tabellarische Ausgaben zu generieren.
+if (!"knitr" %in% rownames(installed.packages())) install.packages("knitr")
+if (!"kableExtra" %in% rownames(installed.packages())) install.packages("kableExtra")
+```
+
+
 ## Initialisierung
 
 Die Beispiele basieren auf dem GermaParl-Korpus. Der Datensatz in dem Paket muss nach dem Laden von polmineR mit dem `use`-Befehl aktiviert werden.
@@ -58,71 +67,172 @@ Ein mächtiger Teil der CWB ist der sogenannte *Corpus Query Processor* (CQP) al
 
 In den folgenden Beispielen wird überwiegend ganz elementar mit der `count`-Methode gezeigt, wie die CQP-Syntax funktioniert. Denken Sie daran, dass  die anderen Funktionen auch CQP können! Im folgenden Tutorial wird zunächst kurz in die Nutzung regulärer Ausdrücke eingeführt. Dann wird die Nutzung linguistischer Merkmale eines Korpus erläutert.
 
+
+
+## Suche nach Worten
+
+Die CQP-Suchsyntax wird mit dem Parameter `query` an die Methoden übergegeben. Voreingestellt ist eine automatische Erkennung, ob die CQP-Syntax verwendet wird. Empfohlen ist jedoch, ausdrücklich über den logischen Parameter `cqp` anzugeben, dass CQP verwendet wird.
+
+Wichtig ist, dass einzelne Suchbegriffe ein Anführungszeichen gesetzt werden müssen und einfache Anführungszeichen den gesammten Suchbegriff umschließen.
+
+```{r}
+count("GERMAPARL", query = '"Diskriminierung"', cqp = TRUE)
+```
+
+Das *flag* %c kann genutzt werden, um die Differenzierung zwischen Groß- und Kleinschreibung aufzuheben. Das führt zum Beispiel bei allen regulär klein geschriebenen Worten (Adjektiven, Verben etc.) zu großen Unterschieden bei der Zählung, weil sie natürlich am Anfang eines Satzes groß geschrieben werden.
+
+```{r}
+count("GERMAPARL", query = c('"Liebe"', '"Liebe" %c'), cqp = TRUE)
+````
+
+
 ----
 
 ## Reguläre Ausdrücke: Zeichenklassen
 
-| Zeichen | Funktion | Beschreibung |
-|:-------:|----------|--------------|
-| .       |Platzhalter beliebiges Zeichen | Ein Punkt (".") steht für ein beliebiges Zeichen |
-| \       | Maskierungszeichen | Der "backslash" hebt als "Maskierungszeichen" die Metabedeutung des nächsten Zeichens auf („Maskierungszeichen“). |
-| \\d | "digit" (Ziffer) | eine Ziffer [0-9] |
-| \\w | "wordcharacter" (Buchstabe) | eine Ziffer oder der Unterstrich, also [a-zA-Z_0-9]|
-| \\s | whitespace | \tmeistens das Leerzeichen und die Klasse der Steuerzeichen \f, \n, \r, \t und \v |
+Zentral für die CQP-Syntax ist, dass bei der Suche nach einzelnen Worten der gesamte Apparat der regulären Ausdrücke genutzt werden kann. Reguläre Ausdrücke sind ein in quasi allen Programmiersprachen verfügbares, standardisiertes Instrument zur Suche nach Zeichenmustern in Text. 
 
-
-_Weiterführend_:
-
-Die Zeichenklassen "whitespace" (\\s), "digit" (\\d) und "wordcharacter" (\\w) können durch Großschreibung auch negiert werden (\\S = "no whitespace", \\W = "no wordcharacter", \\D = no digit).
-
-
-
-----
-
-## Reguläre Ausdrücke: Quantoren
-
-| Zeichen | Beschreibung |
-|:-------:|--------------|
-|?|Der voranstehende Ausdruck ist optional, er kann einmal vorkommen, muss es aber nicht, d.h. der Ausdruck kommt kein- oder einmal vor. (Dies entspricht {0,1})
-|+|Der voranstehende Ausdruck muss mindestens einmal vorkommen, darf aber auch mehrfach vorkommen. (Dies entspricht {1,})|
-|*|Der voranstehende Ausdruck darf beliebig oft (auch keinmal) vorkommen. (Dies entspricht {0,})|
-|{n}|Der voranstehende Ausdruck muss exakt n-mal vorkommen.|
-|{min,}| Der voranstehende Ausdruck muss mindestens min-mal vorkommen.|
-|{min,max}|Der voranstehende Ausdruck muss mindestens min-mal und darf maximal max-mal vorkommen.|
-|{0,max}| Der voranstehende Ausdruck darf maximal max-mal vorkommen.|
-
-Beachte: "min" und "max" und "n" sind hier numerische Werte!
+| Ausdruck | Beschreibung |
+|:-------:| --------------|
+| .       |Ein Punkt (".") steht für ein beliebiges Zeichen |
+| \\d | "digit" (Ziffer), d.h. 0 bis 9 |
+|?|Der voranstehende Ausdruck kommt kein- oder einmal vor.|
+|+|Der voranstehende Ausdruck tritt einmal oder mehrfach auf. |
+|*|Der voranstehende Ausdruck tritt keinmal oder beliebig oft auf.|
+|{n}|Der voranstehende Ausdruck tritt exakt n-fach auf.|
+|{min,}| Der voranstehende Ausdruck tritt mindestens min-fach auf.|
+|{min,max}|Der voranstehende Ausdruck tritt mindestens min-fach und maximal max-fach auf.|
+|{0,max}| Der voranstehende Ausdruck darf maximal max-fach vorkommen.|
 
 ----
 
-## Übung: Jahreszahlen und Datumsangaben im Korpus
+## Reguläre Ausdrücke: Beispiele I
 
-Mit einer Kombination von Zeichenklassen und Quantoren können Sie zum Beispiel Jahreszahlen und Datumsangaben im Korpus finden:
+Damit lassen sich bereits einfache Suchen gestalten:
 
-  * Mit welchem regulären Ausdruck finden Sie eine beliebige Jahreszahl?
-  * Mit welchem regulären Ausdruck finden Sie ein beliebiges Datum?
+```{r}
+y <- count("GERMAPARL", query = '"Multikult.*"', cqp = TRUE, breakdown = TRUE)
+head(y, n = 3)
+```
+
+Wichtig ist, dass alternative Zeichen in eckigen Klammern angegeben werden können. Wenn wir nicht mit dem *flag* %c arbeiten möchten, können wir auch suchen ...
+
+```{r}
+y <- count("GERMAPARL", query = '"[mM]ultikult.*"', cqp = TRUE, breakdown = TRUE)
+head(y, n = 3)
+```
+
+
+## Reguläre Ausdrücke: Beispiele II
+
+Während in eckigen Klammern alternative einzelne Buchstaben angegeben werden könne, können in runden Klammern alternative Zeichenfolgen angegeben werden, die jeweils mit einem senkrechten Querstrich ("|") getrennt werden. 
+
+
+```{r}
+y <- count("GERMAPARL", query = '"(Zu|Ein|Aus)wanderung.*"', breakdown = TRUE)
+head(y)
+```
+
+```{r}
+y <- count("GERMAPARL", query = '"Asyl(suchende|berechtigte|ant|anti)"', cqp = TRUE, breakdown = TRUE)
+head(y)
+```
+
+----
+
+
+## CQP I: Grundlagen
+
+CQP erweitert die Syntax der regulären Ausdrücke um Möglichkeiten, über mehrere Worte ("Tokens") Abfragen zu formulieren. CQP kann die verschiedenen Annotationen eines linguistisch annotierten Korpus abfragen. Das Datenformat ist grundsätzlich tabellarisch. Das heißt, wenn neben der Ursprünglichen Wortform (p-Attribut "word") auch ein Wortarterkennung (sog. "Part-of-Speech"-Annotation, p-Attribut "pos") und eine Lemmatisierung (p-Attribute "lemma") durchgeführt wurde, so ist ein dreispaltiger *tokenstream* verfügbar, der zum Beispiel zu Anfang einer Plenardebatte wie folgt aussehen kann. Die erste Spalte gibt die *corpus position* ("cpos") wider:
+
+```{r, echo = FALSE, message = FALSE}
+P <- partition("GERMAPARL", speaker = "Angela Merkel", lp = "15")
+cpos_left <- P@cpos[1,1]
+pAttributes <- c("word", "pos", "lemma")
+tokenstream_list <- lapply(
+  pAttributes,
+  function(x) getTokenStream("GERMAPARL", pAttribute = x, encoding = "latin1", left = cpos_left, right = cpos_left + 9)
+)
+tokenstream_df <- as.data.frame(tokenstream_list)
+colnames(tokenstream_df) <- pAttributes
+tokenstream_df[["pos"]] <- gsub("^\\$", "\\\\$", tokenstream_df[["pos"]])
+tokenstream_df[["cpos"]] <- 0L:9L
+tokenstream_df <- tokenstream_df[, c("cpos", pAttributes)]
+K <- knitr::kable(tokenstream_df, format = "html", escape = TRUE)
+kableExtra::kable_styling(K, font_size = 18, position = "left")
+```
+
+---- 
+
+## CQP II: Suche im Tokenstream
+
+Wenn über die CQP-Syntax im p-Attribut "word" gesucht wird, muss der Suchbegriff nur in Anführungszeichen gesetzt werden. Um die anderen p-Attribute anzusteuern, wird in eckigen Klammern angegeben, auf welches Attribut man sich beziehen möchte. Mit dem folgenden Suchbegriff "Q" sucht man etwa Abfolgen von einem Nomen, dann "mit" und einem Wort, dass mit "Migrations" beginnt.
+
+
+```{r, eval = TRUE}
+use("GermaParl")
+Q <- '[pos = "NN"] "mit" "Migrations.*"'
+C <- count("GERMAPARL", query = Q, breakdown = TRUE)
+head(C[,c("match", "count", "share")])
+```
+
+----
+
+## CQP III: Quantoren
+
+Als Platzhalter für beliebige Worte dienen leere eckige Klammern. Beispielsweise ... 
+
+```{r}
+y <- count("GERMAPARL", query = '"(Bundesm|M)inisterium" [] [pos = "NN"]', cqp = TRUE, breakdown = TRUE)
+head(y[,c("match", "count", "share")], n = 3)
+```
+
+Entsprechend der bereits von den regulären Ausdrücken bekannten Notation kann in geschweiften Klammern angegeben werden, wie viele beliebige Worte auftreten sollen.
+
+```{r}
+y <- count("GERMAPARL", query = '"([Kk]riminell.*|Straftat.*)" []{0,5} "Asyl.*"', cqp = TRUE, breakdown = TRUE)
+head(y[,c("match", "count", "share")], n = 3)
+```
+
+
+---- 
+
+## CQP: Alle polmineR-Methoden können das
+
+Wie eingangs angesprochen steht die CQP-Syntax bei allen Basis-Methoden des polmineR-Pakets zur Verfügung.
+
+```{r}
+K <- kwic("GERMAPARL", query = '"Integration" []{0,5} ".*[Ss]cheiter.*"', cqp = TRUE)
+```
+
+```{r}
+D <- dispersion("GERMAPARL", query = '"[rR]assis.*"', sAttribute = "party")
+```
+
+```{r}
+C <- cooccurrences("GERMAPARL", query = '"([mM]uslim.|[iI]slam*)"', cqp = TRUE)
+```
+
+Natürlich ist das auch dann der Fall, wenn Sie diese Basis-Methoden auf Partitionen anwenden.
+
+```{r}
+post2001 <- partition("GERMAPARL", year = 2002:2009, verbose = FALSE)
+C <- cooccurrences(post2001, query = '"([mM]uslim.|[iI]slam*)"', cqp = TRUE)
+```
+
+CQP ist ein mächtiges Analysewerkzeug! Richtige Suchabfragen zu formulieren, erfordert allerdings etwas Übung. Beachten Sie hierbei insbesondere:
+
+  * Vergessen Sie nicht, CQP-Abfragen in einfache öffnende und schließende Anführungszeichen zu setzen!
   
-Tip: Wenn Sie bei der `count`-Methode den Parameter `breakdown` auf `TRUE` setzen, erhalten Sie eine tabellarische Übersicht, was im Korpus wie oft getroffen wurde.
+  * Wenn Sie eine Fehlermeldung erhalten, prüfen Sie, ob öffnende Anführungszeichen, eckige oder geschweifte Klammern jeweils geschlossen werden!
 
+Viel Erfolg! 
 
-----
-
-## CQP: Grundlagen
-
-CQP erweitert die Syntax der regulären Ausdrücke um Möglichkeiten, über mehrere Worte ("Tokens") Abfragen zu formulieren.
-
-| Notation | Beschreibung |
-|:--------:|--------------|
-| []| Beliebiges Wort |
-|[]{min,max}|Nutzung von Quantoren wie bei regulären Ausdrücken|
-|[word = "Liebe"]|Die Wortform soll "Liebe" sein |
-|[lemma = "Liebe"]|Das lemmatisierte Token soll "Liebe" sein |
-|[pos = "ADJA"] | Die Part-of-Speech-Annotation soll ein attributives Adjektiv sein |
 
 
 ----
 
-## Das Stuttgart-Tübingen-Tagset
+## Anhang: Das Stuttgart-Tübingen-Tagset (Auszug)
 
 |Notation|Beschreibung|Beispiel|
 |:------:|------------|--------|
@@ -138,11 +248,4 @@ CQP erweitert die Syntax der regulären Ausdrücke um Möglichkeiten, über mehr
 |VAFIN|finites Verb, aux| [du] bist, [wir] werden | 
 
 
-
----- 
-
-## Übung: Welche Attribute der Integration?
-
-
-----
 
