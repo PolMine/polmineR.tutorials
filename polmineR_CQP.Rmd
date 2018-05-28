@@ -1,0 +1,148 @@
+---
+title: "Nutzung der CQP-Syntax mit 'polmineR'"
+subtitle: 'Beispielanalysen mit dem GermaParl-Korpus'
+author: "Andreas Blaette"
+date: "28 Mai 2018"
+output:
+  slidy_presentation:
+    footer: Copyright (c) 2018, Andreas Blaette
+  beamer_presentation: default
+  ioslides_presentation: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Initialisierung
+
+Die Beispiele basieren auf dem GermaParl-Korpus. Der Datensatz in dem Paket muss nach dem Laden von polmineR mit dem `use`-Befehl aktiviert werden.
+
+```{r initialize, eval = TRUE, message=FALSE}
+library(polmineR)
+use("GermaParl")
+```
+
+Wenn Sie den Code der folgenden Beispiele auf Ihrem eigenen Rechner nachvollziehen möchten, können Sie das 'Rmarkdown'-Dokument, mit dem der Foliensatz generiert wurde, direkt in R laden:
+
+```{r get_code, eval = FALSE}
+if (!"RCurl" %in% rownames(installed.packages())) install.packages("RCurl")
+library(RCurl)
+script <- getURL(
+  "https://raw.githubusercontent.com/PolMine/polmineR.tutorials/master/polmineR_CQP.Rmd",
+  ssl.verifypeer = FALSE
+  )
+```
+
+
+Speichern Sie das Skript auf Ihrem Schreibtisch - oder an einem anderen Speicherort.
+
+```{r save_code, eval = FALSE}
+filename <- "~/Desktop/polmineR_CQP.Rmd"
+if (interactive()) writeLines(text = script, con = filename)
+```
+
+Wenn Sie jetzt das Dokument öffnen, können Sie den Code Schritt für Schritt nachvollziehen. Nutzen Sie den Code als Ausgnagspunkt für Ihre eigenen Analysen!
+
+----
+
+## CWB, CQP und 'polmineR'
+
+Das R-Paket nutzt für die Speicherung und die Abfrage von Daten die sogenannte *Corpus Workbench* (CWB). Die CWB ist ein Bündel von Tools mit der Funktionalität eines "indexing and query engine". Vergleichbare Software, die für industrielle Anwendungen Vorteile bietet, wären [Lucene](https://lucene.apache.org/) oder [Elasticsearch](https:://www.elastic.co) Ein großer Vorteil der CWB ist jedoch, dass sie vollständig quelloffen ist und in Software-Projekten genutzt und weiterentwickelt werden kann.
+
+Ein mächtiger Teil der CWB ist der sogenannte *Corpus Query Processor* (CQP) als Instrument, für große Korpora komplexe sprachlich Suchanfragen zur formulieren, die reguläre Ausdrücke und linguistische Annotationen von Korpora beinhalten können. Die CQP-Syntax kann bei allen Basis-Befehlen des polmineR-Pakets genutzt werden:
+
+  * `kwic` (Keyword-in-Context-Analysen / Abfrage von Konkordanzen);
+  * `count` (Häufigkeitszählung in Korpora und Sub-Korpora);
+  * `dispersion` (Verteilung von Suchtreffern über ein strukturelles Attribut);
+  * `cooccurrences` (Analyse von Kookkurrenzen im Wortumfeld eines Suchtreffers);
+
+In den folgenden Beispielen wird überwiegend ganz elementar mit der `count`-Methode gezeigt, wie die CQP-Syntax funktioniert. Denken Sie daran, dass  die anderen Funktionen auch CQP können! Im folgenden Tutorial wird zunächst kurz in die Nutzung regulärer Ausdrücke eingeführt. Dann wird die Nutzung linguistischer Merkmale eines Korpus erläutert.
+
+----
+
+## Reguläre Ausdrücke: Zeichenklassen
+
+| Zeichen | Funktion | Beschreibung |
+|:-------:|----------|--------------|
+| .       |Platzhalter beliebiges Zeichen | Ein Punkt (".") steht für ein beliebiges Zeichen |
+| \       | Maskierungszeichen | Der "backslash" hebt als "Maskierungszeichen" die Metabedeutung des nächsten Zeichens auf („Maskierungszeichen“). |
+| \\d | "digit" (Ziffer) | eine Ziffer [0-9] |
+| \\w | "wordcharacter" (Buchstabe) | eine Ziffer oder der Unterstrich, also [a-zA-Z_0-9]|
+| \\s | whitespace | \tmeistens das Leerzeichen und die Klasse der Steuerzeichen \f, \n, \r, \t und \v |
+
+
+_Weiterführend_:
+
+Die Zeichenklassen "whitespace" (\\s), "digit" (\\d) und "wordcharacter" (\\w) können durch Großschreibung auch negiert werden (\\S = "no whitespace", \\W = "no wordcharacter", \\D = no digit).
+
+
+
+----
+
+## Reguläre Ausdrücke: Quantoren
+
+| Zeichen | Beschreibung |
+|:-------:|--------------|
+|?|Der voranstehende Ausdruck ist optional, er kann einmal vorkommen, muss es aber nicht, d.h. der Ausdruck kommt kein- oder einmal vor. (Dies entspricht {0,1})
+|+|Der voranstehende Ausdruck muss mindestens einmal vorkommen, darf aber auch mehrfach vorkommen. (Dies entspricht {1,})|
+|*|Der voranstehende Ausdruck darf beliebig oft (auch keinmal) vorkommen. (Dies entspricht {0,})|
+|{n}|Der voranstehende Ausdruck muss exakt n-mal vorkommen.|
+|{min,}| Der voranstehende Ausdruck muss mindestens min-mal vorkommen.|
+|{min,max}|Der voranstehende Ausdruck muss mindestens min-mal und darf maximal max-mal vorkommen.|
+|{0,max}| Der voranstehende Ausdruck darf maximal max-mal vorkommen.|
+
+Beachte: "min" und "max" und "n" sind hier numerische Werte!
+
+----
+
+## Übung: Jahreszahlen und Datumsangaben im Korpus
+
+Mit einer Kombination von Zeichenklassen und Quantoren können Sie zum Beispiel Jahreszahlen und Datumsangaben im Korpus finden:
+
+  * Mit welchem regulären Ausdruck finden Sie eine beliebige Jahreszahl?
+  * Mit welchem regulären Ausdruck finden Sie ein beliebiges Datum?
+  
+Tip: Wenn Sie bei der `count`-Methode den Parameter `breakdown` auf `TRUE` setzen, erhalten Sie eine tabellarische Übersicht, was im Korpus wie oft getroffen wurde.
+
+
+----
+
+## CQP: Grundlagen
+
+CQP erweitert die Syntax der regulären Ausdrücke um Möglichkeiten, über mehrere Worte ("Tokens") Abfragen zu formulieren.
+
+| Notation | Beschreibung |
+|:--------:|--------------|
+| []| Beliebiges Wort |
+|[]{min,max}|Nutzung von Quantoren wie bei regulären Ausdrücken|
+|[word = "Liebe"]|Die Wortform soll "Liebe" sein |
+|[lemma = "Liebe"]|Das lemmatisierte Token soll "Liebe" sein |
+|[pos = "ADJA"] | Die Part-of-Speech-Annotation soll ein attributives Adjektiv sein |
+
+
+----
+
+## Das Stuttgart-Tübingen-Tagset
+
+|Notation|Beschreibung|Beispiel|
+|:------:|------------|--------|
+|ADJA|attributives Adjektiv| [das] große [Haus]|
+|ART| bestimmter oder unbestimmter Artikel | der, die, das, ein, eine, ... |
+|NN| normales Nomen|Tisch, Herr, [das] Reisen|
+|NE|Eigennamen| Hans, Hamburg, HSV|
+|VVFIN|finites Verb, voll | [du] gehst, [wir] kommen [an] |
+|VVIMP|Imperativ, voll|komm [!]|
+|VVINF|Infinitiv, voll|gehen, ankommen|
+|VVIZU|Infinitiv mit ``zu'', voll| anzukommen, loszulassen|
+|VVPP|Partizip Perfekt, voll| gegangen, angekommen|
+|VAFIN|finites Verb, aux| [du] bist, [wir] werden | 
+
+
+
+---- 
+
+## Übung: Welche Attribute der Integration?
+
+
+----
+
