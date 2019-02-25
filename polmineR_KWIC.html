@@ -490,6 +490,9 @@ Andreas Blaette
 <p>Es gibt gute gründe davon auszugehen, dass Merkmale eines Sprechers wie Fraktions- bzw. Parteizugehörigkeit (Parteiendifferenzthese!), Geschlecht etc. einen Unterschied machen: Zeigen Sie die Metadaten zu einer Konkordanz mit dem Argument <code>sAttribute</code> an. Beachte: Mehrere Attribute müssen kombiniert werden über c(), das “c” steht hier für “combine”.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">kwic</span>(bt2005, <span class="dt">query =</span> <span class="st">&quot;Ausländer&quot;</span>, <span class="dt">sAttribute =</span> <span class="st">&quot;party&quot;</span>)</a>
 <a class="sourceLine" id="cb8-2" data-line-number="2"><span class="kw">kwic</span>(bt2005, <span class="dt">query =</span> <span class="st">&quot;Ausländer&quot;</span>, <span class="dt">sAttribute =</span> <span class="kw">c</span>(<span class="st">&quot;party&quot;</span>, <span class="st">&quot;date&quot;</span>))</a></code></pre></div>
+<p>Um den Volltext zu einer Konkordanz zu lesen, machen Sie eine Zwischenspeicherung des KWIC-Ergebnisses, und wenden dann die <code>read</code>-Methode an.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">K &lt;-<span class="st"> </span><span class="kw">kwic</span>(bt2005, <span class="dt">query =</span> <span class="st">&quot;Ausländer&quot;</span>, <span class="dt">sAttribute =</span> <span class="st">&quot;party&quot;</span>)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">read</span>(K, <span class="dv">1</span>)</a></code></pre></div>
 </div>
 
   <!-- dynamically load mathjax for compatibility with self-contained -->
